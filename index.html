@@ -198,15 +198,26 @@ details.lineblk>summary .n{font-family:var(--code);font-size:11px;color:var(--mu
 .payline .lbl{flex:0 0 82px;font-family:var(--code);font-size:9.5px;letter-spacing:.1em;
   text-transform:uppercase;color:var(--muted);padding-top:3px}
 .payline .cards{flex:1;min-width:0;display:flex;flex-wrap:wrap;gap:5px}
-.stlist{border-top:1px solid var(--hair);padding:6px}
-.strow{display:flex;align-items:center;gap:8px;width:100%;border:0;background:none;font:inherit;
-  padding:6px 8px;border-radius:7px;text-align:left;cursor:pointer;color:var(--ink)}
+.stlist{border-top:1px solid var(--hair);padding:6px 6px 6px 0}
+.strow{position:relative;display:flex;align-items:center;gap:8px;width:100%;border:0;background:none;font:inherit;
+  padding:7px 8px 7px 34px;text-align:left;cursor:pointer;color:var(--ink)}
+.strow::before{content:"";position:absolute;left:15px;top:0;bottom:0;width:5px;background:var(--c);border-radius:0}
+.strow::after{content:"";position:absolute;left:11px;top:50%;margin-top:-6.5px;width:13px;height:13px;
+  border-radius:50%;background:var(--surface);border:3px solid var(--c);box-sizing:border-box}
+.strow:first-of-type::before{top:50%;border-radius:3px 3px 0 0}
+.strow:last-of-type::before{bottom:50%;border-radius:0 0 3px 3px}
 .strow:hover{background:var(--surface2)}
-.strow .cd{flex:0 0 46px}
+.strow .cd{flex:0 0 46px;color:var(--c);border-color:color-mix(in srgb,var(--c) 45%,transparent)}
 .strow .nb{flex:1;min-width:0}
-.strow .nb b{display:block;font-size:14px;font-weight:600}
-.strow .nb span{display:block;font-size:11px;color:var(--muted)}
-.strow .xf{font-size:10.5px;color:var(--muted);font-family:var(--code)}
+.strow .nb>b{display:block;font-size:14px;font-weight:600}
+.strow .nb>span{display:block;font-size:11px;color:var(--muted)}
+.thn{font-size:13px;font-weight:600;color:var(--c);margin-right:4px}
+.strow .xf{flex:0 0 auto;display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end;max-width:44%}
+.xchip{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:650;
+  padding:2px 6px 3px;border-radius:5px;white-space:nowrap;
+  color:var(--xc);background:color-mix(in srgb,var(--xc) 13%,transparent);
+  border:1px solid color-mix(in srgb,var(--xc) 40%,transparent)}
+.xchip i{width:6px;height:6px;border-radius:50%;background:var(--xc);flex:0 0 auto}
 
 /* ---------- spots ---------- */
 .spot{display:flex;align-items:center;gap:10px;width:100%;border:0;background:var(--surface);
@@ -271,6 +282,15 @@ details.lineblk>summary .n{font-family:var(--code);font-size:11px;color:var(--mu
 .mictext{margin-top:10px;padding:11px 12px;background:var(--surface2);border:1px solid var(--hair);
   border-radius:9px;font-size:17px;font-weight:600;line-height:1.5;color:var(--ink);min-height:24px}
 .mictext.wait{color:var(--muted);font-weight:500;font-size:14px}
+.keybox{margin-top:14px;border-top:1px dashed var(--hair);padding-top:10px}
+.keybox>summary{cursor:pointer;font-size:12.5px;font-weight:600;color:var(--muted);list-style:none}
+.keybox>summary::-webkit-details-marker{display:none}
+.keybox>summary::before{content:"⚙ ";}
+.keybox>summary:hover{color:var(--ink)}
+.trres{margin-top:12px;padding:13px 14px;background:var(--surface2);border:1px solid var(--hair);border-radius:10px}
+.trres .src{font-size:12.5px;color:var(--muted);margin-bottom:6px}
+.trres .big{font-size:24px;font-weight:650;line-height:1.45;color:var(--ink);text-wrap:balance}
+.trres .kana{font-size:12.5px;color:var(--muted);margin-top:4px}
 
 /* 指さし回答パネル */
 .showans{padding-top:12px;border-top:2px solid var(--accent)}
@@ -382,14 +402,36 @@ footer{margin-top:26px;padding-top:14px;border-top:1px solid var(--hair);font-si
   </div>
   <div id="phraseList"></div>
   <div class="card panel">
-    <div class="eyebrow" style="margin-bottom:6px">それ以外の文を訳す</div>
-    <div class="field"><input id="i-tr" type="text" autocomplete="off" placeholder="伝えたいことを日本語で入力"></div>
-    <div class="trbtns">
-      <a class="gmaps" id="tr-th" target="_blank" rel="noopener" href="#">日本語 → タイ語</a>
-      <a class="gmaps" id="tr-en" target="_blank" rel="noopener" href="#">日本語 → 英語</a>
-      <a class="gmaps" id="tr-ja" target="_blank" rel="noopener" href="#">タイ語 → 日本語</a>
+    <div class="eyebrow" style="margin-bottom:6px">その場で翻訳</div>
+    <div class="field"><input id="i-tr" type="text" autocomplete="off" placeholder="伝えたいことを入力"></div>
+    <div class="segrow" style="margin-top:10px">
+      <div class="seg" id="trdir" role="group">
+        <button type="button" data-d="ja|th" aria-pressed="true">日→タイ</button>
+        <button type="button" data-d="th|ja" aria-pressed="false">タイ→日</button>
+        <button type="button" data-d="ja|en" aria-pressed="false">日→英</button>
+      </div>
     </div>
-    <p class="note" style="margin-top:10px">Google翻訳が別タブで開く（<b>ネット接続が必要</b>）。上のフレーズ集はオフラインで動く。</p>
+    <button class="geobtn" id="trgo" type="button" style="margin-top:10px">翻訳する</button>
+    <div id="trOut"></div>
+
+    <details class="keybox" id="keybox">
+      <summary>翻訳キーの設定（端末ごとに1回だけ）</summary>
+      <p class="note" style="margin:8px 0">Google Cloud Translation の APIキーを貼ると、このページ内で翻訳できるようになる。
+      <b>キーはこの端末のブラウザにだけ保存され、公開ページには含まれない。</b>他の人がこのURLを開いてもキーは見えない。</p>
+      <div class="field"><input id="i-key" type="password" autocomplete="off" placeholder="AIza..."></div>
+      <div class="trbtns">
+        <button class="gmaps" id="keysave" type="button" style="cursor:pointer">保存</button>
+        <button class="gmaps" id="keydel" type="button" style="cursor:pointer">削除</button>
+      </div>
+      <div class="note" id="keystat" style="margin-top:8px"></div>
+    </details>
+
+    <div class="trbtns" style="margin-top:12px">
+      <a class="gmaps" id="tr-th" target="_blank" rel="noopener" href="#">Google翻訳を開く（日→タイ）</a>
+      <a class="gmaps" id="tr-ja" target="_blank" rel="noopener" href="#">（タイ→日）</a>
+      <a class="gmaps" id="tr-en" target="_blank" rel="noopener" href="#">（日→英）</a>
+    </div>
+    <p class="note" style="margin-top:8px">キーが無くても上のリンクからGoogle翻訳が開く。フレーズ集はオフラインで動く。</p>
   </div>
 
   <div class="card panel" id="micCard" hidden>
@@ -609,6 +651,56 @@ const FARE = {
  RED:[12,14,16,18,20,22,25,28,31,34,37,40,42]
 };
 const SYSNAME={BTS:"BTS",MRT:"MRTブルーライン",PURPLE:"MRTパープルライン",ARL:"ARL",GOLD:"ゴールドライン",YELLOW:"イエローライン",PINK:"ピンクライン",RED:"SRTレッドライン"};
+/* ===== 駅名のタイ語表記（要確認：綴りが現地表記と違う可能性あり。英語表記も併記して保険にする） ===== */
+const TH={
+ // BTS スクンビット線
+ N24:"คูคต",N23:"แยก คปอ.",N22:"พิพิธภัณฑ์กองทัพอากาศ",N21:"โรงพยาบาลภูมิพลอดุลยเดช",N20:"สะพานใหม่",
+ N19:"สายหยุด",N18:"พหลโยธิน 59",N17:"วัดพระศรีมหาธาตุ",N16:"กรมทหารราบที่ 11",N15:"บางบัว",
+ N14:"กรมป่าไม้",N13:"มหาวิทยาลัยเกษตรศาสตร์",N12:"เสนานิคม",N11:"รัชโยธิน",N10:"พหลโยธิน 24",
+ N9:"ห้าแยกลาดพร้าว",N8:"หมอชิต",N7:"สะพานควาย",N5:"อารีย์",N4:"สนามเป้า",N3:"อนุสาวรีย์ชัยสมรภูมิ",
+ N2:"พญาไท",N1:"ราชเทวี",CEN:"สยาม",
+ E1:"ชิดลม",E2:"เพลินจิต",E3:"นานา",E4:"อโศก",E5:"พร้อมพงษ์",E6:"ทองหล่อ",E7:"เอกมัย",E8:"พระโขนง",
+ E9:"อ่อนนุช",E10:"บางจาก",E11:"ปุณณวิถี",E12:"อุดมสุข",E13:"บางนา",E14:"แบริ่ง",E15:"สำโรง",
+ E16:"ปู่เจ้า",E17:"ช้างเอราวัณ",E18:"โรงเรียนนายเรือ",E19:"ปากน้ำ",E20:"ศรีนครินทร์",E21:"แพรกษา",
+ E22:"สายลวด",E23:"เคหะฯ",
+ // BTS シーロム線
+ W1:"สนามกีฬาแห่งชาติ",S1:"ราชดำริ",S2:"ศาลาแดง",S3:"ช่องนนทรี",S4:"เซนต์หลุยส์",S5:"สุรศักดิ์",
+ S6:"สะพานตากสิน",S7:"กรุงธนบุรี",S8:"วงเวียนใหญ่",S9:"โพธิ์นิมิตร",S10:"ตลาดพลู",S11:"วุฒากาศ",S12:"บางหว้า",
+ // MRT ブルーライン
+ BL01:"ท่าพระ",BL02:"จรัญฯ 13",BL03:"ไฟฉาย",BL04:"บางขุนนนท์",BL05:"บางยี่ขัน",BL06:"สิรินธร",
+ BL07:"บางพลัด",BL08:"บางอ้อ",BL09:"บางโพ",BL10:"เตาปูน",BL11:"บางซื่อ",BL12:"กำแพงเพชร",
+ BL13:"สวนจตุจักร",BL14:"พหลโยธิน",BL15:"ลาดพร้าว",BL16:"รัชดาภิเษก",BL17:"สุทธิสาร",BL18:"ห้วยขวาง",
+ BL19:"ศูนย์วัฒนธรรมแห่งประเทศไทย",BL20:"พระราม 9",BL21:"เพชรบุรี",BL22:"สุขุมวิท",
+ BL23:"ศูนย์การประชุมแห่งชาติสิริกิติ์",BL24:"คลองเตย",BL25:"ลุมพินี",BL26:"สีลม",BL27:"สามย่าน",
+ BL28:"หัวลำโพง",BL29:"วัดมังกร",BL30:"สามยอด",BL31:"สนามไชย",BL32:"อิสรภาพ",
+ BL34:"บางไผ่",BL35:"บางหว้า",BL36:"เพชรเกษม 48",BL37:"ภาษีเจริญ",BL38:"บางแค",BL39:"หลักสอง",
+ // ARL / ゴールドライン
+ A8:"พญาไท",A7:"ราชปรารภ",A6:"มักกะสัน",A5:"รามคำแหง",A4:"หัวหมาก",A3:"บ้านทับช้าง",
+ A2:"ลาดกระบัง",A1:"สุวรรณภูมิ",
+ G1:"กรุงธนบุรี",G2:"เจริญนคร",G3:"คลองสาน",
+ // SRT レッドライン
+ RN01:"กรุงเทพอภิวัฒน์",RN02:"จตุจักร",RN03:"วัดเสมียนนารี",RN04:"บางเขน",RN05:"ทุ่งสองห้อง",
+ RN06:"หลักสี่",RN07:"การเคหะ",RN08:"ดอนเมือง",RN09:"รังสิต",
+ RW02:"บางซ่อน",RW03:"บางบำหรุ",RW04:"ตลิ่งชัน",
+ // MRT パープルライン（要確認）
+ PP01:"คลองบางไผ่",PP02:"ตลาดบางใหญ่",PP03:"สามแยกบางใหญ่",PP04:"บางพลู",PP05:"บางรักใหญ่",
+ PP06:"ท่าอิฐ",PP07:"ไทรม้า",PP08:"สะพานพระนั่งเกล้า",PP09:"แยกนนทบุรี 1",PP10:"บางกระสอ",
+ PP11:"ศูนย์ราชการนนทบุรี",PP12:"กระทรวงสาธารณสุข",PP13:"แยกติวานนท์",PP14:"วงศ์สว่าง",
+ PP15:"บางซ่อน",PP16:"เตาปูน",
+ // モノレール（要確認）
+ YL01:"ลาดพร้าว",YL02:"ภาวนา",YL03:"โชคชัย 4",YL04:"ลาดพร้าว 71",YL05:"ลาดพร้าว 83",YL06:"มหาดไทย",
+ YL07:"ลาดพร้าว 101",YL08:"บางกะปิ",YL09:"ลำสาลี",YL10:"ศรีกรีฑา",YL11:"หัวหมาก",YL12:"กลันตัน",
+ YL13:"ศรีนุช",YL14:"ศรีนครินทร์ 38",YL15:"สวนหลวง ร.9",YL16:"ศรีอุดม",YL17:"ศรีเอี่ยม",YL18:"ศรีลาซาล",
+ YL19:"ศรีแบริ่ง",YL20:"ศรีด่าน",YL21:"ศรีเทพา",YL22:"ทิพวัล",YL23:"สำโรง",
+ PK01:"ศูนย์ราชการนนทบุรี",PK02:"แคราย",PK03:"สนามบินน้ำ",PK04:"สามัคคี",PK05:"กรมชลประทาน",
+ PK06:"แยกปากเกร็ด",PK07:"เลี่ยงเมืองปากเกร็ด",PK08:"แจ้งวัฒนะ-ปากเกร็ด 28",PK09:"ศรีรัช",
+ PK10:"เมืองทองธานี",PK11:"แจ้งวัฒนะ 14",PK12:"ศูนย์ราชการเฉลิมพระเกียรติ",PK13:"โทรคมนาคมแห่งชาติ",
+ PK14:"หลักสี่",PK15:"ราชภัฏพระนคร",PK16:"วัดพระศรีมหาธาตุ",PK17:"รามอินทรา 3",PK18:"ลาดปลาเค้า"
+};
+
+/* 乗換チップ用の短い路線名 */
+const SHORT={su:"スクンビット",si:"シーロム",bl:"ブルー",pp:"パープル",yl:"イエロー",pk:"ピンク",
+  arl:"ARL",gl:"ゴールド",rd:"レッド",rl:"ライトレッド"};
 const MRT_THROUGH_CAP=70; // ブルー＋パープル通し利用の上限（目安）
 
 /* ===================== グラフ構築 ===================== */
@@ -973,7 +1065,7 @@ function run(){
     const first=leg.stops[0], last=leg.stops[n];
     html+=`<div class="leg" style="--c:var(${meta.c})">`;
     html+=`<div class="stop"><div class="nm">${esc(ST[first].ja)} <span class="code">${ST[first].code}</span></div>
-             <div class="en">${esc(ST[first].en)}</div></div>`;
+             <div class="en">${TH[first]?`<b class="thn" style="--c:var(${meta.c})">${esc(TH[first])}</b>`:""}${esc(ST[first].en)}</div></div>`;
     html+=`<div class="legbar">
              <span class="pill" style="--c:var(${meta.c})"><span class="dot"></span>${esc(meta.name)}</span>
              <span class="ride"><span class="num">${n}</span>駅・約<span class="num">${Math.round(leg.min)}</span>分</span>
@@ -998,7 +1090,7 @@ function run(){
       if(!showAll) html+=`<div class="stop mid" style="padding:4px 0"><button class="more" data-t="${id}">途中の ${mids.length} 駅を表示</button></div>`;
     }
     html+=`<div class="stop"><div class="nm">${esc(ST[last].ja)} <span class="code">${ST[last].code}</span></div>
-             <div class="en">${esc(ST[last].en)}</div></div>`;
+             <div class="en">${TH[last]?`<b class="thn" style="--c:var(${meta.c})">${esc(TH[last])}</b>`:""}${esc(ST[last].en)}</div></div>`;
     html+=`</div>`;
   });
   const q=encodeURIComponent(`${ST[sel.from].en} Station Bangkok to ${ST[sel.to].en} Station Bangkok`);
@@ -1093,12 +1185,16 @@ function dist(a,b,c,d){ // haversine (m)
     const ids=[]; m.segs.forEach(s=>s.ids.forEach(x=>{ if(!ids.includes(x)) ids.push(x); }));
     const rows=ids.map(x=>{
       const s=ST[x];
-      const others=[...s.lines].filter(l=>l!==id).map(l=>LINE[l].en.replace(/(BTS |MRT |SRT )/,"")).join(", ");
-      const xf=XFER.filter(t=>t[0]===x||t[1]===x).map(t=>ST[t[0]===x?t[1]:t[0]]).map(o=>LINE[[...o.lines][0]].en.replace(/(BTS |MRT |SRT )/,"")).join(", ");
-      const conn=[others,xf].filter(Boolean).join(", ");
-      return `<button class="strow" data-id="${x}"><span class="code cd">${s.code}</span>
-        <span class="nb"><b>${esc(s.ja)}</b><span>${esc(s.en)}</span></span>
-        ${conn?`<span class="xf">⇄ ${esc(conn)}</span>`:""}</button>`;
+      const conn=[];
+      const add=l=>{ if(l!==id&&!conn.includes(l)) conn.push(l); };
+      [...s.lines].forEach(add);
+      XFER.forEach(t=>{ if(t[0]===x||t[1]===x){ [...ST[t[0]===x?t[1]:t[0]].lines].forEach(add); } });
+      const chips=conn.map(l=>
+        `<span class="xchip" style="--xc:var(${LINE[l].c})"><i></i>${esc(SHORT[l]||LINE[l].en)}</span>`).join("");
+      return `<button class="strow" data-id="${x}"><span class="code cd">${esc(s.code)}</span>
+        <span class="nb"><b>${esc(s.ja)}</b>
+          <span>${TH[x]?`<b class="thn">${esc(TH[x])}</b> `:""}${esc(s.en)}</span></span>
+        ${chips?`<span class="xf">${chips}</span>`:""}</button>`;
     }).join("");
     const notes=[m.note,m.check?"⚠ "+m.check:""].filter(Boolean).join(" ／ ");
     const p=PAY[m.sys];
@@ -1365,7 +1461,9 @@ const PHRASES=[
   let g="m";
   const stName=()=>{
     const id=sel.to||sel.from;
-    return id?ST[id].en+" ("+ST[id].code+")":null;
+    if(!id) return null;
+    // タイ語表記があれば併記（駅員は英語表記と駅番号でも確実に分かる）
+    return (TH[id]?TH[id]+" / ":"")+ST[id].en+" ("+ST[id].code+")";
   };
   const sub=(s,forShow)=>{
     const st=stName();
@@ -1412,7 +1510,7 @@ const PHRASES=[
   window._renderPhrases=render;
   render();
 
-  // 任意の文 → Google翻訳
+  // Google翻訳リンク（キー無しのフォールバック）
   const ti=document.getElementById("i-tr");
   const upd=()=>{
     const t=encodeURIComponent(ti.value||"");
@@ -1422,6 +1520,100 @@ const PHRASES=[
     document.getElementById("tr-ja").href=u("th","ja");
   };
   ti.addEventListener("input",upd); upd();
+})();
+
+/* ===== Google Cloud Translation API（キーは端末のlocalStorageに保存。公開ページには含まれない） ===== */
+const KEY_LS="bkk_gapi_key";
+const BUILTIN_KEY="";   // ここに書けば全員が使えるが、公開ページのソースに載るので非推奨
+const apiKey=()=>{ try{ return (localStorage.getItem(KEY_LS)||"").trim()||BUILTIN_KEY; }catch(e){ return BUILTIN_KEY; } };
+async function gTranslate(text,source,target){
+  const key=apiKey();
+  if(!key){ const e=new Error("nokey"); e.code="nokey"; throw e; }
+  let r;
+  try{
+    r=await fetch("https://translation.googleapis.com/language/translate/v2?key="+encodeURIComponent(key),{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({q:text,source,target,format:"text"})
+    });
+  }catch(err){ const e=new Error("net"); e.code="net"; throw e; }
+  if(!r.ok){
+    let msg=""; try{ const j=await r.json(); msg=(j.error&&j.error.message)||""; }catch(x){}
+    const e=new Error("http"); e.code="http"; e.status=r.status; e.msg=msg; throw e;
+  }
+  const j=await r.json();
+  const t=j&&j.data&&j.data.translations&&j.data.translations[0];
+  if(!t){ const e=new Error("shape"); e.code="shape"; throw e; }
+  return String(t.translatedText).replace(/&#(\d+);/g,(m,d)=>String.fromCharCode(+d))
+    .replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">");
+}
+function trErrMsg(e){
+  if(e.code==="nokey") return "APIキーが未設定。下の「⚙ 翻訳キーの設定」から貼って。無い場合は下のGoogle翻訳リンクを使って。";
+  if(e.code==="net")   return "通信できなかった。オフラインか、ブラウザに止められた可能性。Google翻訳リンクを使って。";
+  if(e.code==="http"){
+    if(e.status===400) return "リクエストが不正だった（言語の指定か文字列の問題）。"+(e.msg?"（"+e.msg+"）":"");
+    if(e.status===403) return "キーが拒否された。①Cloud Translation APIが有効か ②キーの制限（リファラー）にこのURLが入っているか、を確認して。"+(e.msg?"（"+e.msg+"）":"");
+    if(e.status===429) return "使用量の上限に達した。時間を置くか、Google Cloud側の上限を確認して。";
+    return "翻訳サーバーがエラーを返した（HTTP "+e.status+"）。"+(e.msg?"（"+e.msg+"）":"");
+  }
+  return "翻訳に失敗した。Google翻訳リンクを使って。";
+}
+
+(function(){
+  const ti=document.getElementById("i-tr"), out=document.getElementById("trOut");
+  const btn=document.getElementById("trgo"), seg=document.getElementById("trdir");
+  const keyIn=document.getElementById("i-key"), stat=document.getElementById("keystat");
+  let dir="ja|th";
+
+  const showStat=()=>{ stat.innerHTML=apiKey()
+    ? `✅ この端末にキーが保存されている。翻訳が使える。`
+    : `未設定。キーが無いうちは下のGoogle翻訳リンクが使える。`; };
+  document.getElementById("keysave").addEventListener("click",()=>{
+    const v=(keyIn.value||"").trim();
+    if(!v){ stat.textContent="キーが空だよ。"; return; }
+    try{ localStorage.setItem(KEY_LS,v); keyIn.value=""; showStat(); }
+    catch(e){ stat.textContent="保存できなかった（プライベートブラウズだと保存できないことがある）。"; }
+  });
+  document.getElementById("keydel").addEventListener("click",()=>{
+    try{ localStorage.removeItem(KEY_LS); }catch(e){}
+    keyIn.value=""; showStat();
+  });
+  showStat();
+  if(!apiKey()) document.getElementById("keybox").open=true;
+
+  seg.addEventListener("click",e=>{
+    const b=e.target.closest("button"); if(!b) return;
+    dir=b.dataset.d;
+    seg.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));
+    ti.placeholder = dir.startsWith("th") ? "タイ語を入力（相手に打ってもらう）" : "伝えたいことを日本語で入力";
+  });
+
+  const run=async()=>{
+    const text=(ti.value||"").trim();
+    if(!text){ out.innerHTML=`<p class="note" style="margin-top:10px">文を入力して。</p>`; return; }
+    const [s,t]=dir.split("|");
+    btn.disabled=true; const label=btn.textContent; btn.textContent="翻訳中…";
+    out.innerHTML=`<p class="note" style="margin-top:10px">翻訳中…</p>`;
+    try{
+      const res=await gTranslate(text,s,t);
+      const lang = t==="th"?"th":t==="en"?"en":null;
+      out.innerHTML=`<div class="trres">
+          <div class="src">${esc(text)}</div>
+          <div class="big" id="trBig">${esc(res)}</div>
+        </div>
+        <div class="trbtns">
+          ${lang?`<button class="gmaps" id="trSpeak" type="button" style="cursor:pointer">🔊 読み上げ</button>`:""}
+          <button class="gmaps" id="trShow" type="button" style="cursor:pointer">👆 全画面で見せる</button>
+        </div>`;
+      const sp=document.getElementById("trSpeak");
+      if(sp) sp.addEventListener("click",()=>speak(res,lang,0.85));
+      document.getElementById("trShow").addEventListener("click",()=>
+        showPhrase(text,res,"",t==="en"?res:"",t==="th"?"タイ語（Google翻訳）":""));
+    }catch(e){
+      out.innerHTML=`<div class="warnbox" style="margin-top:10px">${esc(trErrMsg(e))}</div>`;
+    }finally{ btn.disabled=false; btn.textContent=label; }
+  };
+  btn.addEventListener("click",run);
+  ti.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); run(); } });
 })();
 
 /* ===== 読み上げ（端末内蔵の音声。外部通信なし） ===== */
@@ -1486,13 +1678,23 @@ if("speechSynthesis" in window){ try{ window.speechSynthesis.getVoices(); }catch
       if(!text) return;
       const u=`https://translate.google.com/?sl=th&tl=ja&text=${encodeURIComponent(text)}&op=translate`;
       out.innerHTML=`<div class="mictext">${esc(text)}</div>
+        <div id="micJa"></div>
         <div class="trbtns">
-          <a class="gmaps" href="${u}" target="_blank" rel="noopener">日本語で読む（Google翻訳）→</a>
+          <a class="gmaps" href="${u}" target="_blank" rel="noopener">Google翻訳で開く →</a>
           <button class="gmaps" id="micSpeak" type="button" style="cursor:pointer">🔊 読み返す</button>
         </div>
         <p class="note" style="margin-top:8px">聞き取りは<b>間違うことがある</b>。おかしければ相手にもう一度言ってもらって。</p>`;
       const s=document.getElementById("micSpeak");
       if(s) s.addEventListener("click",()=>speak(text,"th",0.8));
+      // キーがあれば日本語訳をその場で出す
+      const ja=document.getElementById("micJa");
+      if(apiKey()&&ja){
+        ja.innerHTML=`<p class="note" style="margin-top:8px">日本語に翻訳中…</p>`;
+        gTranslate(text,"th","ja")
+          .then(v=>{ ja.innerHTML=`<div class="trres" style="margin-top:10px">
+              <div class="src">日本語訳</div><div class="big">${esc(v)}</div></div>`; })
+          .catch(e=>{ ja.innerHTML=`<div class="warnbox" style="margin-top:10px">${esc(trErrMsg(e))}</div>`; });
+      }
     };
     try{ rec.start(); }catch(e){ busy=false; btn.textContent="🎤 タイ語を聞き取る"; }
   });
@@ -1580,7 +1782,8 @@ document.getElementById("memoBody").innerHTML=`
 <ul>
 <li><b>タイ語の表記は要確認</b>。細かい綴りや語尾が現地の言い方と違う可能性がある。だから<b>英語を必ず併記</b>してあるので、通じなければ英語のほうを見せて。</li>
 <li>語尾の <b>ครับ（男性）／ค่ะ（女性）</b> は「話す人」の切替で変わる。「私」も ผม／ดิฉัน で切り替わる。</li>
-<li>駅名は<b>タイ語ではなく英語表記＋駅番号</b>を入れている。駅員さんは英語の駅名と番号で確実に分かるので、そのほうが安全。</li>
+<li>駅名は<b>タイ語表記＋英語表記＋駅番号</b>を併記している。タイ語の綴りが違っていても、英語名と駅番号で駅員さんには確実に伝わる。</li>
+<li><b>駅名のタイ語表記も要確認</b>。BTS2路線・MRTブルーライン・ARL・ゴールドラインは確度が高いが、イエロー／ピンク／パープルは綴りが違う可能性がある。現地の駅名標と見比べて。</li>
 <li>定型以外の文はGoogle翻訳のリンクで開く（<b>ネット必要</b>）。フレーズ集のほうはオフラインで動く。</li>
 </ul>
 
@@ -1597,7 +1800,15 @@ document.getElementById("memoBody").innerHTML=`
 <ul>
 <li><b>🔊 タイ語で読み上げ</b>：端末に入っている音声を使うので<b>オフラインで動く</b>。タイ語の音声が入っていない端末では警告が出る（設定の「言語と入力 → 音声」でタイ語を追加すると使えることがある）。うまく読めないときは <b>🔊 English</b> か画面表示で。</li>
 <li><b>🎤 タイ語を聞き取る</b>：相手に喋ってもらってタイ語の文字にする。<b>ネット接続が必要</b>で、対応していない端末ではボタンが出ない。聞き取りは<b>間違うことがある</b>ので、変な文になったら言い直してもらって。</li>
-<li>アプリの中にGoogle翻訳そのものを組み込むことはできない（このページは外部通信をブロックする仕組みで動いているため）。翻訳はGoogle翻訳のリンクで開く形になる。</li>
+<li><b>その場で翻訳</b>：Google Cloud Translation の APIキーを設定すると、ページ内で日本語⇄タイ語⇄英語を翻訳できる。翻訳結果はそのまま読み上げ／全画面表示できる。マイクで聞き取ったタイ語も自動で日本語訳が出る。</li>
+</ul>
+
+<h2>翻訳キーの設定（初回だけ）</h2>
+<ul>
+<li>「タイ語で聞く」タブ →「その場で翻訳」→ <b>⚙ 翻訳キーの設定</b> にAPIキーを貼って保存。</li>
+<li><b>キーはその端末のブラウザにだけ保存される</b>（localStorage）。公開ページのソースには含まれないので、他の人がこのURLを開いてもキーは見えない。<b>端末ごとに1回だけ</b>必要（PCとiPhoneで各1回）。</li>
+<li>キーの取り方：Google Cloud Console → プロジェクト作成 → 「Cloud Translation API」を有効化 → 認証情報でAPIキーを作成 → キーの制限で「HTTPリファラー」にこのサイトのURLを登録。<b>課金の有効化が必要</b>で、無料枠を超えると料金が発生する。上限（割り当て）を必ず設定しておくこと。<b>要確認</b>：無料枠の条件と料金は変わるので、Google Cloud の最新の料金ページで確認して。</li>
+<li>キーが未設定でも、Google翻訳を別タブで開くリンクは使える。フレーズ集はオフラインで動く。</li>
 </ul>
 
 <h2>実務メモ</h2>
