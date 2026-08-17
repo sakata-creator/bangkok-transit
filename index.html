@@ -232,6 +232,13 @@ details.lineblk>summary .n{font-family:var(--code);font-size:11px;color:var(--mu
 .spoth{margin:22px 0 0;font-size:15px;font-weight:650;letter-spacing:-.01em}
 .spot .walk{flex:0 0 auto;font-family:var(--code);font-size:10.5px;color:var(--muted);text-align:right}
 
+/* ---------- タイ語で聞くタブの並び順（翻訳→マイク→フレーズ） ---------- */
+#talk:not([hidden]){display:flex;flex-direction:column}
+#talk>div:nth-of-type(1){order:3}   /* 使い方・話す人・フレーズ検索 */
+#talk>div:nth-of-type(2){order:4}   /* フレーズ一覧 */
+#talk>div:nth-of-type(3){order:1}   /* その場で翻訳 */
+#talk>div:nth-of-type(4){order:2}   /* 相手の返事を聞き取る */
+
 /* ---------- タイ語フレーズ ---------- */
 .segrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .seg{display:inline-flex;background:var(--surface2);border:1px solid var(--hair);border-radius:9px;padding:2px;gap:2px}
@@ -276,7 +283,9 @@ details.lineblk>summary .n{font-family:var(--code);font-size:11px;color:var(--mu
   background:color-mix(in srgb,var(--accent) 10%,transparent);
   border:1px solid color-mix(in srgb,var(--accent) 40%,transparent);border-radius:8px;
   padding:8px 11px;cursor:pointer}
-.spk:hover{background:color-mix(in srgb,var(--accent) 18%,transparent)}
+.spk:hover:not([disabled]){background:color-mix(in srgb,var(--accent) 18%,transparent)}
+.spk[disabled]{opacity:.45;cursor:not-allowed;color:var(--muted);
+  border-color:var(--hair);background:var(--surface2)}
 .spkmsg{font-size:12px;color:var(--warn);line-height:1.5}
 .spkmsg:empty{display:none}
 .mictext{margin-top:10px;padding:11px 12px;background:var(--surface2);border:1px solid var(--hair);
@@ -403,6 +412,7 @@ footer{margin-top:26px;padding-top:14px;border-top:1px solid var(--hair);font-si
   <div id="phraseList"></div>
   <div class="card panel">
     <div class="eyebrow" style="margin-bottom:6px">その場で翻訳</div>
+    <p class="note" style="margin:0 0 10px">日本語を入れると<b>タイ語に翻訳して大きく表示</b>できる。読み上げもできる。<b>初回だけ下の「⚙ 翻訳キーの設定」が必要</b>（キー無しならGoogle翻訳のリンクを使う）。</p>
     <div class="field"><input id="i-tr" type="text" autocomplete="off" placeholder="伝えたいことを入力"></div>
     <div class="segrow" style="margin-top:10px">
       <div class="seg" id="trdir" role="group">
@@ -1618,25 +1628,41 @@ function trErrMsg(e){
 
 /* ===== 読み上げ（端末内蔵の音声。外部通信なし） ===== */
 let CUR_TH="", CUR_EN="";
-const spkMsg=t=>{ const e=document.getElementById("spkmsg"); if(e) e.textContent=t||""; };
-function voicesFor(pre){
-  try{ return (window.speechSynthesis.getVoices()||[]).filter(v=>(v.lang||"").toLowerCase().startsWith(pre)); }
-  catch(e){ return []; }
+const spkMsg=t=>{ const e=document.getElementById("spkmsg"); if(e) e.innerHTML=t||""; };
+/* 音声リストは非同期で読み込まれるので、変化のたびに取り直す */
+let VOICES=[];
+function voicesFor(pre){ return VOICES.filter(v=>(v.lang||"").toLowerCase().replace(/_/g,"-").startsWith(pre)); }
+function refreshVoices(){
+  try{ VOICES=window.speechSynthesis.getVoices()||[]; }catch(e){ VOICES=[]; }
+  const th=document.getElementById("spk-th"), sl=document.getElementById("spk-slow"), en=document.getElementById("spk-en");
+  if(!th) return;
+  const hasTh=voicesFor("th").length>0, hasEn=voicesFor("en").length>0;
+  [th,sl].forEach(b=>{ b.disabled=!hasTh; });
+  en.disabled=!hasEn;
+  th.textContent=hasTh?"🔊 タイ語で読み上げ":"🔊 タイ語の音声なし";
 }
+const NOTH='この端末に<b>タイ語の音声が入っていない</b>ので読み上げできない。'+
+  '<br>・iPhone / Android なら大抵入ってる（入ってなければ 設定 → アクセシビリティ → 読み上げコンテンツ → 声 でタイ語を追加）'+
+  '<br>・Windows は 設定 → 時刻と言語 → 音声認識 → 音声を管理する → 追加 でタイ語を入れると使える'+
+  '<br>それまでは <b>English</b> ボタンか、画面をそのまま見せる方法で。';
 function speak(text,lang,rate){
   if(!text) return;
-  if(!("speechSynthesis" in window)){ spkMsg("この端末は読み上げに対応していないみたい。画面をそのまま見せて。"); return; }
-  window.speechSynthesis.cancel();
+  if(!("speechSynthesis" in window)){ spkMsg("この端末は読み上げに対応していない。画面をそのまま見せて。"); return; }
+  refreshVoices();
   const vs=voicesFor(lang);
+  if(!vs.length){ spkMsg(lang==="th"?NOTH:"この端末にその言語の音声が入っていない。"); return; }
+  window.speechSynthesis.cancel();
   const u=new SpeechSynthesisUtterance(text.replace(/\s*\/\s*/g,"、"));
-  if(vs.length){ u.voice=vs[0]; u.lang=vs[0].lang; }
-  else u.lang = lang==="th"?"th-TH":"en-US";
-  u.rate=rate||0.85;
-  spkMsg(lang==="th"&&!vs.length
-    ? "この端末にタイ語の音声が入ってないかも。変な発音なら英語ボタンか画面表示を使って（端末の設定で タイ語の音声を追加すると読めるようになる）。" : "");
+  u.voice=vs[0]; u.lang=vs[0].lang; u.rate=rate||0.85;
+  u.onerror=e=>spkMsg("読み上げでエラーが出た（"+(e.error||"不明")+"）。");
+  spkMsg("");
   window.speechSynthesis.speak(u);
 }
-if("speechSynthesis" in window){ try{ window.speechSynthesis.getVoices(); }catch(e){} }
+if("speechSynthesis" in window){
+  refreshVoices();
+  try{ window.speechSynthesis.onvoiceschanged=refreshVoices; }catch(e){}
+  setTimeout(refreshVoices,300); setTimeout(refreshVoices,1500);
+}
 (function(){
   const th=document.getElementById("spk-th"), sl=document.getElementById("spk-slow"), en=document.getElementById("spk-en");
   th.addEventListener("click",()=>speak(CUR_TH,"th",0.85));
@@ -1702,7 +1728,9 @@ if("speechSynthesis" in window){ try{ window.speechSynthesis.getVoices(); }catch
 
 /* 見せるモード（ansKey があれば相手に指さしてもらう答えパネルも出す） */
 function showPhrase(ja,th,kana,en,note,ansKey){
-  CUR_TH=th; CUR_EN=en; spkMsg("");
+  CUR_TH=th; CUR_EN=en;
+  refreshVoices();
+  spkMsg(("speechSynthesis" in window)&&!voicesFor("th").length?NOTH:"");
   document.getElementById("showja").textContent=ja;
   document.getElementById("showth").textContent=th;
   document.getElementById("showkana").textContent=kana;
