@@ -108,6 +108,32 @@ section[hidden]{display:none}
 .opts label{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink2);cursor:pointer}
 .opts input{accent-color:var(--accent);width:16px;height:16px}
 
+/* ---------- 日時指定 ---------- */
+.timebox{margin-top:12px;padding-top:12px;border-top:1px dashed var(--hair);
+  display:flex;flex-direction:column;gap:8px}
+.timerow{display:flex;align-items:center;gap:9px}
+.timerow input[type="time"]{font:inherit;font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;
+  color:var(--ink);background:var(--surface2);border:1px solid var(--hair);border-radius:8px;padding:7px 9px}
+.timerow input[type="time"]:focus{outline:none;border-color:var(--accent);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
+.tbtn{appearance:none;font:inherit;font-size:13px;font-weight:600;color:var(--accent);
+  background:color-mix(in srgb,var(--accent) 10%,transparent);
+  border:1px solid color-mix(in srgb,var(--accent) 38%,transparent);border-radius:8px;padding:7px 13px;cursor:pointer}
+.tbtn:hover{background:color-mix(in srgb,var(--accent) 18%,transparent)}
+.seg.wrapseg{flex-wrap:wrap}
+.seg.wrapseg button{padding:6px 10px}
+
+/* 時刻の表示 */
+.sched{display:flex;align-items:baseline;gap:8px;margin-top:6px;flex-wrap:wrap;
+  font-variant-numeric:tabular-nums}
+.sched .t{font-size:22px;font-weight:680;letter-spacing:-.01em}
+.sched .arrow{color:var(--muted)}
+.sched .lbl{font-size:11px;color:var(--muted);font-family:var(--code);letter-spacing:.1em}
+.legtime{font-family:var(--code);font-size:12px;font-weight:650;font-variant-numeric:tabular-nums;
+  color:var(--c);background:color-mix(in srgb,var(--c) 12%,transparent);
+  border:1px solid color-mix(in srgb,var(--c) 35%,transparent);border-radius:5px;padding:1px 6px 2px}
+.stop .nm .legtime{margin-left:2px}
+
 /* ---------- GPS ---------- */
 .georow{margin-top:12px;padding-top:12px;border-top:1px dashed var(--hair)}
 .geobtn{width:100%;appearance:none;font:inherit;font-size:14px;font-weight:600;color:var(--accent);
@@ -365,6 +391,20 @@ footer{margin-top:26px;padding-top:14px;border-top:1px solid var(--hair);font-si
         </div>
       </div>
       <button class="swap" id="swap" type="button" aria-label="出発と到着を入れ替え">⇅</button>
+    </div>
+    <div class="timebox">
+      <div class="timerow">
+        <span class="eyebrow">日時</span>
+        <input type="time" id="i-time" step="60">
+        <button class="tbtn" id="btn-now" type="button">今</button>
+      </div>
+      <div class="seg wrapseg" id="timemode" role="group">
+        <button type="button" data-m="dep" aria-pressed="true">出発</button>
+        <button type="button" data-m="arr" aria-pressed="false">到着</button>
+        <button type="button" data-m="first" aria-pressed="false">始発</button>
+        <button type="button" data-m="last" aria-pressed="false">終電</button>
+        <button type="button" data-m="none" aria-pressed="false">指定なし</button>
+      </div>
     </div>
     <div class="opts">
       <label><input type="checkbox" id="opt-flat"> 20バーツ均一運賃で計算</label>
@@ -730,6 +770,29 @@ for(const L of LINES){
   meta.segs.push(seg); SEGS.push(seg);
 }
 const WAIT=4, XPEN=6;
+
+/* ===== 始発・終電の目安（要確認：路線・方向で違う） ===== */
+const FIRSTLAST={
+ su:["06:00","24:00"],si:["06:00","24:00"],bl:["06:00","24:00"],pp:["05:30","24:00"],
+ yl:["06:00","24:00"],pk:["06:00","24:00"],arl:["05:30","24:00"],gl:["06:00","24:00"],
+ rd:["05:00","24:00"],rl:["05:00","24:00"]
+};
+/* 運転間隔の目安（分）。バンコクは時刻表ではなく間隔運転 */
+function headway(mins,line){
+  const h=mins/60;
+  if(line==="arl") return ((h>=7&&h<9)||(h>=17&&h<19.5))?10:15;
+  if(line==="rd"||line==="rl") return 20;
+  if(h<7)    return 6;
+  if(h<9)    return 3;   // 朝ラッシュ
+  if(h<16)   return 5;
+  if(h<19.5) return 3;   // 夕ラッシュ
+  if(h<22)   return 5;
+  return 7;
+}
+const hm2min=s=>{ const p=String(s).split(":"); return (+p[0])*60+(+p[1]); };
+const min2hm=m=>{ const t=((m%1440)+1440)%1440;
+  return String(Math.floor(t/60)).padStart(2,"0")+":"+String(t%60).padStart(2,"0"); };
+const isPeak=m=>{ const h=(((m%1440)+1440)%1440)/60; return (h>=7&&h<9)||(h>=17&&h<19.5); };
 const ADJ={};  // "st|line" -> [{to,min,kind,...}]
 const key=(s,l)=>s+"|"+l;
 function push(a,b,min,kind,extra){ (ADJ[a]=ADJ[a]||[]).push(Object.assign({to:b,min,kind},extra||{})); }
@@ -814,6 +877,44 @@ function search(from,to){
   }
   return {legs,rides,totalTime,transfers:Math.max(0,legs.filter(x=>x.walk).length),
           hops:rides.reduce((a,r)=>a+r.stops.length-1,0),fare,fareParts,capped};
+}
+
+/* ===== 時刻の割り当て（バンコクは間隔運転なので「目安」） ===== */
+function schedule(r,startMin){
+  let t=startMin; const rows=[]; const warn=[];
+  for(const leg of r.legs){
+    if(leg.walk){ rows.push({walk:true}); t+=leg.min; continue; }
+    const hw=headway(t,leg.line);
+    const wait=Math.max(1,Math.round(hw/2));
+    const board=t+wait, ride=Math.round(leg.min), arrive=board+ride;
+    const fl=FIRSTLAST[leg.line]||["05:00","24:00"];
+    if(board<hm2min(fl[0])) warn.push(`${LINE[leg.line].name}はまだ動いていない時間（始発 目安 ${fl[0]}）`);
+    if(board>hm2min(fl[1])) warn.push(`${LINE[leg.line].name}の終電を過ぎている（終電 目安 ${fl[1]}）`);
+    rows.push({board,arrive,wait,hw});
+    t=arrive;
+  }
+  return {rows,depart:startMin,arrive:t,warn};
+}
+/* 到着時刻から出発時刻を逆算 */
+function solveArrive(r,arrMin){
+  let dep=arrMin-r.totalTime;
+  for(let i=0;i<4;i++){ dep += arrMin - schedule(r,dep).arrive; }
+  return dep;
+}
+/* 終電に間に合う最終の出発時刻（目安） */
+function solveLast(r){
+  const lines=r.rides.map(x=>x.line);
+  let dep=Math.min(...lines.map(l=>hm2min((FIRSTLAST[l]||["05:00","24:00"])[1])));
+  for(let i=0;i<300;i++){
+    if(!schedule(r,dep).warn.length) return dep;
+    dep-=1;
+  }
+  return null;
+}
+/* 始発で行く場合の出発時刻 */
+function solveFirst(r){
+  const l=r.rides.length?r.rides[0].line:null;
+  return l?hm2min((FIRSTLAST[l]||["05:00","24:00"])[0]):null;
 }
 
 /* 方面（終点）表示 */
@@ -1027,6 +1128,24 @@ document.getElementById("swap").addEventListener("click",()=>{
 document.getElementById("opt-flat").addEventListener("change",run);
 document.getElementById("opt-all").addEventListener("change",run);
 
+/* 日時指定 */
+let TMODE="dep";
+(function(){
+  const ti=document.getElementById("i-time"), seg=document.getElementById("timemode");
+  const setNow=()=>{ const d=new Date(); ti.value=min2hm(d.getHours()*60+d.getMinutes()); };
+  setNow();
+  document.getElementById("btn-now").addEventListener("click",()=>{ setNow(); run(); });
+  ti.addEventListener("change",run);
+  seg.addEventListener("click",e=>{
+    const b=e.target.closest("button"); if(!b) return;
+    TMODE=b.dataset.m;
+    seg.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));
+    const need=(TMODE==="dep"||TMODE==="arr");
+    ti.disabled=!need; document.getElementById("btn-now").disabled=!need;
+    run();
+  });
+})();
+
 /* ===================== 結果描画 ===================== */
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function run(){
@@ -1048,9 +1167,28 @@ function run(){
     </div>`; return;
   }
 
+  // ---- 時刻の割り当て ----
+  const tv=document.getElementById("i-time").value||"09:00";
+  let sch=null, schNote="";
+  if(TMODE==="dep"){ sch=schedule(r,hm2min(tv)); }
+  else if(TMODE==="arr"){ const d=solveArrive(r,hm2min(tv)); sch=schedule(r,d);
+    schNote=`${esc(tv)} 着で逆算`; }
+  else if(TMODE==="first"){ const d=solveFirst(r); if(d!=null){ sch=schedule(r,d); schNote="始発で移動（目安）"; } }
+  else if(TMODE==="last"){ const d=solveLast(r);
+    if(d!=null){ sch=schedule(r,d); schNote="終電に間に合う最終の出発（目安）"; }
+    else schNote="終電で成立する経路が見つからなかった"; }
+
   let html=`<div class="card sum">
     <div class="eyebrow">Route</div>
     <div class="od">${esc(A.ja)} <i>→</i> ${esc(B.ja)}</div>
+    ${sch?`<div class="sched">
+        <span class="lbl">発</span><span class="t">${min2hm(sch.depart)}</span>
+        <span class="arrow">→</span>
+        <span class="lbl">着</span><span class="t">${min2hm(sch.arrive)}</span>
+        ${isPeak(sch.depart)?`<span class="pill" style="--c:var(--warn)"><span class="dot"></span>ラッシュ時</span>`:""}
+      </div>${schNote?`<div class="note" style="margin-top:2px">${esc(schNote)}</div>`:""}`:""}
+    ${sch&&sch.warn.length?`<div class="warnbox" style="margin-top:10px">⚠ ${sch.warn.map(esc).join("<br>")}</div>`:""}
+    ${TMODE==="last"&&!sch?`<div class="warnbox" style="margin-top:10px">⚠ ${esc(schNote)}</div>`:""}
     <div class="metrics">
       <div><div class="k">所要目安</div><div class="v">${r.totalTime}<small>分</small></div></div>
       <div><div class="k">乗換</div><div class="v">${r.transfers}<small>回</small></div></div>
@@ -1061,25 +1199,30 @@ function run(){
 
   html+=`<div class="card route">`;
   const BEM=s=>s==="MRT"||s==="PURPLE";      // ブルー＋パープルは通し運賃（改札を出ない）
+  const st=li=>(sch&&sch.rows[li]&&!sch.rows[li].walk)?sch.rows[li]:null;
   r.legs.forEach((leg,li)=>{
     if(leg.walk){
       let ps=null,ns=null;
       for(let k=li-1;k>=0;k--) if(!r.legs[k].walk){ ps=LINE[r.legs[k].line].sys; break; }
       for(let k=li+1;k<r.legs.length;k++) if(!r.legs[k].walk){ ns=LINE[r.legs[k].line].sys; break; }
       const cross=ps&&ns&&ps!==ns&&!(BEM(ps)&&BEM(ns));
-      html+=`<div class="xfer">🚶 <b>乗換</b>：${esc(leg.label||"")} ／ 徒歩約 <span class="num">${leg.min}</span> 分＋待ち約 <span class="num">${WAIT}</span> 分
+      const nx=st(li+1);
+      html+=`<div class="xfer">🚶 <b>乗換</b>：${esc(leg.label||"")} ／ 徒歩約 <span class="num">${leg.min}</span> 分＋待ち約 <span class="num">${nx?nx.wait:WAIT}</span> 分
         ${cross?`<div class="xwarn">🎫 事業者が変わる（${esc(SYSNAME[ps])} → ${esc(SYSNAME[ns])}）：<b>改札を出て買い直し</b></div>`:""}</div>`;
       return;
     }
     const meta=LINE[leg.line], n=leg.stops.length-1;
     const first=leg.stops[0], last=leg.stops[n];
     html+=`<div class="leg" style="--c:var(${meta.c})">`;
-    html+=`<div class="stop"><div class="nm">${esc(ST[first].ja)} <span class="code">${ST[first].code}</span></div>
+    const S=st(li);
+    html+=`<div class="stop"><div class="nm">${esc(ST[first].ja)} <span class="code">${ST[first].code}</span>
+             ${S?`<span class="legtime" style="--c:var(${meta.c})">${min2hm(S.board)} 発</span>`:""}</div>
              <div class="en">${TH[first]?`<b class="thn" style="--c:var(${meta.c})">${esc(TH[first])}</b>`:""}${esc(ST[first].en)}</div></div>`;
     html+=`<div class="legbar">
              <span class="pill" style="--c:var(${meta.c})"><span class="dot"></span>${esc(meta.name)}</span>
              <span class="ride"><span class="num">${n}</span>駅・約<span class="num">${Math.round(leg.min)}</span>分</span>
              <span class="dir">${esc(direction(leg))}</span>
+             ${S?`<span class="dir">待ち約<span class="num">${S.wait}</span>分（<span class="num">${S.hw}</span>分間隔）</span>`:""}
            </div>`;
     // この区間で使える支払い（事業者ごと）
     const lp=PAY[meta.sys];
@@ -1099,7 +1242,8 @@ function run(){
         `</div>`;
       if(!showAll) html+=`<div class="stop mid" style="padding:4px 0"><button class="more" data-t="${id}">途中の ${mids.length} 駅を表示</button></div>`;
     }
-    html+=`<div class="stop"><div class="nm">${esc(ST[last].ja)} <span class="code">${ST[last].code}</span></div>
+    html+=`<div class="stop"><div class="nm">${esc(ST[last].ja)} <span class="code">${ST[last].code}</span>
+             ${S?`<span class="legtime" style="--c:var(${meta.c})">${min2hm(S.arrive)} 着</span>`:""}</div>
              <div class="en">${TH[last]?`<b class="thn" style="--c:var(${meta.c})">${esc(TH[last])}</b>`:""}${esc(ST[last].en)}</div></div>`;
     html+=`</div>`;
   });
@@ -1793,12 +1937,25 @@ document.getElementById("memoBody").innerHTML=`
 </table></div>
 <p class="note" style="margin-top:8px">事業者をまたぐ乗換（BTS⇄MRT など）は<b>改札を出て買い直し</b>＝運賃も合算。だから乗換1回減らすほうが安いことが多い。</p>
 
-<h2>運行時間（目安）</h2>
+<h2>時刻の考え方（重要）</h2>
 <ul>
-<li>BTS・MRT：おおむね <b>6:00〜24:00</b>。終電は路線・方向で違うので、23時以降は駅の掲示を確認。</li>
-<li>ARL：<b>5:30〜24:00</b> 前後。深夜便の到着だとタクシー／Grab一択。</li>
-<li>ラッシュは <b>7:30〜9:00 / 17:00〜19:30</b>。アソーク・サイアム・モーチットは相当混む。</li>
+<li><b>バンコクのBTS・MRTに時刻表は無い。</b>「10:23発」のような発車時刻は公開されておらず、<b>運転間隔（何分ごと）</b>で走っている。だからこのアプリの時刻は<b>すべて目安の計算値</b>で、実際の電車の時刻ではない。</li>
+<li>使っている間隔の目安：<b>朝7〜9時と夕17〜19:30は3分</b>／日中5分／早朝6分／22時以降7分。<b>ARLは15分（ラッシュ10分）</b>、<b>SRTレッドラインは20分</b>。</li>
+<li>待ち時間は「間隔の半分」で計算している。運が悪ければもっと待つ。</li>
+<li><b>リアルタイムの遅延・運休は分からない。</b>時間が読めない移動はGoogleマップのリンクで確認して。</li>
 </ul>
+
+<h2>運行時間（目安・要確認）</h2>
+<div class="tblwrap"><table>
+<tr><th>路線</th><th>始発</th><th>終電</th></tr>
+<tr><td>BTS 2路線／ゴールド</td><td class="n">6:00</td><td class="n">24:00</td></tr>
+<tr><td>MRT ブルー</td><td class="n">6:00</td><td class="n">24:00</td></tr>
+<tr><td>MRT パープル</td><td class="n">5:30</td><td class="n">24:00</td></tr>
+<tr><td>イエロー／ピンク</td><td class="n">6:00</td><td class="n">24:00</td></tr>
+<tr><td>ARL（空港線）</td><td class="n">5:30</td><td class="n">24:00</td></tr>
+<tr><td>SRT レッドライン</td><td class="n">5:00</td><td class="n">24:00</td></tr>
+</table></div>
+<p class="note" style="margin-top:8px"><b>終電は路線・方向で違う。</b>23時以降に動くなら必ず駅の掲示を確認して。深夜はタクシー／Grabに切り替えるのが安全。ラッシュのアソーク・サイアム・モーチットは相当混む。</p>
 
 <h2>空港からの動き方</h2>
 <ul>
