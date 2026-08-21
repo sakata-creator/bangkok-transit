@@ -192,6 +192,13 @@ section[hidden]{display:none}
 .legbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:4px 0 4px}
 .legbar .ride{font-size:12.5px;color:var(--ink2)}
 .legbar .dir{font-size:12.5px;color:var(--muted)}
+.dest{display:flex;align-items:baseline;gap:8px;padding:2px 0 8px;flex-wrap:wrap}
+.dest .dk{flex:0 0 auto;font-family:var(--code);font-size:9.5px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--muted)}
+.dest .dv{font-size:13.5px;color:var(--ink2)}
+.dest .dv b{font-weight:680;color:var(--c)}
+.dest .den{font-family:var(--code);font-size:13px;letter-spacing:.01em}
+.dest .dth{font-size:13px;color:var(--c);font-weight:600}
 .more{appearance:none;background:none;border:0;padding:2px 0;margin:0;color:var(--accent);
   font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
 .xfer{margin:2px 0 2px;padding:8px 11px;background:var(--surface2);border:1px dashed var(--hair);
@@ -921,21 +928,19 @@ function solveFirst(r){
 function direction(leg){
   const meta=LINE[leg.line];
   const a=leg.stops[0], b=leg.stops[1];
+  if(!b) return null;
   for(const seg of meta.segs){
     for(let i=0;i<seg.ids.length-1;i++){
-      if(seg.ids[i]===a&&seg.ids[i+1]===b){
-        const loop=seg.ids[0]===seg.ids[seg.ids.length-1];
-        if(loop) return "次は "+ST[b].ja+" 方向";
-        return ST[seg.ids[seg.ids.length-1]].ja+"方面";
-      }
-      if(seg.ids[i]===b&&seg.ids[i+1]===a){
-        const loop=seg.ids[0]===seg.ids[seg.ids.length-1];
-        if(loop) return "次は "+ST[b].ja+" 方向";
-        return ST[seg.ids[0]].ja+"方面";
-      }
+      const loop=seg.ids[0]===seg.ids[seg.ids.length-1];
+      let term=null;
+      if(seg.ids[i]===a&&seg.ids[i+1]===b)      term=seg.ids[seg.ids.length-1];
+      else if(seg.ids[i]===b&&seg.ids[i+1]===a) term=seg.ids[0];
+      else continue;
+      if(loop) return {loop:true,ja:ST[b].ja,en:ST[b].en,th:TH[b]||""};
+      return {loop:false,ja:ST[term].ja,en:ST[term].en,th:TH[term]||""};
     }
   }
-  return "";
+  return null;
 }
 
 /* ===================== 駅ピッカー ===================== */
@@ -1218,12 +1223,20 @@ function run(){
     html+=`<div class="stop"><div class="nm">${esc(ST[first].ja)} <span class="code">${ST[first].code}</span>
              ${S?`<span class="legtime" style="--c:var(${meta.c})">${min2hm(S.board)} 発</span>`:""}</div>
              <div class="en">${TH[first]?`<b class="thn" style="--c:var(${meta.c})">${esc(TH[first])}</b>`:""}${esc(ST[first].en)}</div></div>`;
+    const d=direction(leg);
     html+=`<div class="legbar">
              <span class="pill" style="--c:var(${meta.c})"><span class="dot"></span>${esc(meta.name)}</span>
              <span class="ride"><span class="num">${n}</span>駅・約<span class="num">${Math.round(leg.min)}</span>分</span>
-             <span class="dir">${esc(direction(leg))}</span>
+             ${d?`<span class="dir">${d.loop?`次は ${esc(d.ja)} 方向`:`${esc(d.ja)}方面`}</span>`:""}
              ${S?`<span class="dir">待ち約<span class="num">${S.wait}</span>分（<span class="num">${S.hw}</span>分間隔）</span>`:""}
            </div>`;
+    // 電車の行き先表示（ホームの掲示板と照らし合わせる用）
+    if(d) html+=`<div class="dest" style="--c:var(${meta.c})">
+        <span class="dk">行き先</span>
+        ${d.loop
+          ? `<span class="dv">環状運転。掲示は <b>Tha Phra</b> か <b>Lak Song</b>（次の駅は ${esc(d.en)}）</span>`
+          : `<span class="dv"><b>${esc(d.ja)}行</b> ・ <b class="den">${esc(d.en)}</b>${d.th?` ・ <span class="dth">${esc(d.th)}</span>`:""}</span>`}
+      </div>`;
     // この区間で使える支払い（事業者ごと）
     const lp=PAY[meta.sys];
     const lft=FARE[meta.sys];
