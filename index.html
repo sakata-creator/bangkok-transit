@@ -261,6 +261,9 @@ details.lineblk>summary .n{font-family:var(--code);font-size:11px;color:var(--mu
 .spot .nb{flex:1;min-width:0}
 .spot .nb b{display:block;font-size:14.5px;font-weight:620}
 .spot .nb span{display:block;font-size:12px;color:var(--muted)}
+.spot .exit{display:inline-block;margin-top:4px;font-size:12px;font-weight:650;color:var(--c);
+  background:color-mix(in srgb,var(--c) 12%,transparent);
+  border:1px solid color-mix(in srgb,var(--c) 38%,transparent);border-radius:6px;padding:2px 7px 3px}
 .spotwrap{border:1px solid var(--hair);border-radius:11px;overflow:hidden;box-shadow:var(--shadow);margin-top:10px}
 .spoth{margin:22px 0 0;font-size:15px;font-weight:650;letter-spacing:-.01em}
 .spot .walk{flex:0 0 auto;font-family:var(--code);font-size:10.5px;color:var(--muted);text-align:right}
@@ -438,6 +441,7 @@ footer{margin-top:26px;padding-top:14px;border-top:1px solid var(--hair);font-si
   <div class="warnbox" style="margin-top:10px"><b>注意</b>：パッポンとタニヤは飲食店と風俗店が混在するエリア。夜は客引きやぼったくりの話も普通にあるので、店は自分で見て判断して。</div>
   <h2 class="spoth">観光・買い物</h2>
   <div class="spotwrap" id="spotList"></div>
+  <div class="warnbox" style="margin-top:10px"><b>出口番号について</b>：🚪 が付いている場所だけ出口番号を調べて入れてあります（<b>要確認</b>）。出口の番号や名称は工事などで変わることがあるので、駅構内の案内図と見比べてください。番号が無い場所はまだ未調査です。</div>
 </section>
 
 <section id="talk" hidden>
@@ -640,7 +644,7 @@ const XFER = [
    rabbit: Rabbitカード / mrt: MRTカード / emv: クレカ等のタッチ決済 / cash: 券売機・窓口 */
 const PAY={
  BTS   :{rabbit:2,mrt:0,emv:1,cash:2,op:"BTS",memo:"Rabbitカードが基本。1回券は券売機（小銭が必要な機械あり）"},
- GOLD  :{rabbit:2,mrt:0,emv:1,cash:2,op:"BTS系",memo:"BTS運営なのでRabbitが使える。均一16฿"},
+ GOLD  :{rabbit:2,mrt:0,emv:1,cash:2,op:"BTS系",memo:"BTS運営なのでRabbitが使える。均一17฿（2026年1月に16฿から改定）"},
  YELLOW:{rabbit:2,mrt:0,emv:1,cash:2,op:"BTS系(EBM)",memo:"BTSグループ運営。Rabbit可（要確認）"},
  PINK  :{rabbit:2,mrt:0,emv:1,cash:2,op:"BTS系(NBM)",memo:"BTSグループ運営。Rabbit可（要確認）"},
  MRT   :{rabbit:0,mrt:2,emv:2,cash:2,op:"BEM",memo:"MRTカード or クレカのタッチ決済。Rabbitは使えない"},
@@ -702,7 +706,7 @@ const FARE = {
  MRT:[17,20,22,24,26,28,30,32,34,36,38,40,42,43,44,45],
  PURPLE:[14,17,20,23,26,29,32,35,38,41,42],
  ARL:[15,20,25,30,35,40,45],
- GOLD:[16],
+ GOLD:[17],
  YELLOW:[15,17,19,21,23,25,27,29,31,33,35,37,39,41,43,45],
  PINK:[15,17,19,21,23,25,27,29,31,33,35,37,39,41,43,45],
  RED:[12,14,16,18,20,22,25,28,31,34,37,40,42]
@@ -1388,16 +1392,17 @@ function dist(a,b,c,d){ // haversine (m)
 })();
 
 /* ===================== スポット ===================== */
+/* 4番目の要素＝出口番号（ネット調べ・要確認）。分からないものは空にしてある */
 const SPOTS=[
- ["王宮・ワットプラケオ","BL31","徒歩約10分"],["ワット・ポー（涅槃仏）","BL31","徒歩約10分"],
+ ["王宮・ワットプラケオ","BL31","徒歩約10分","1番出口"],["ワット・ポー（涅槃仏）","BL31","徒歩約10分","1番出口"],
  ["ワット・アルン（暁の寺）","BL32","渡し船に乗り換え"],["カオサン通り","BL30","徒歩約20分 or タクシー"],
- ["ヤワラート（中華街）","BL29",""],["チャトゥチャック週末市場","N8","BL12でも可"],
- ["オートーコー市場","BL12",""],["サイアム・パラゴン／サイアムスクエア","CEN",""],
- ["セントラルワールド／エラワン廟","E1",""],["MBK／ジム・トンプソンの家","W1",""],
- ["ICONSIAM","G2",""],["アジアティーク","S6","無料シャトル船"],
- ["ターミナル21","E4",""],["エムスフィア／エムクオーティエ","E5",""],
+ ["ヤワラート（中華街）","BL29","","1番出口"],["チャトゥチャック週末市場","N8","BL12でも可","BTSは1番出口／MRTカムペーンペットは2番出口"],
+ ["オートーコー市場","BL12",""],["サイアム・パラゴン／サイアムスクエア","CEN","駅直結"],
+ ["セントラルワールド／エラワン廟","E1","連絡通路"],["MBK／ジム・トンプソンの家","W1","","MBKは4番出口（連絡橋）／ジム・トンプソンは1番出口"],
+ ["ICONSIAM","G2","","3番出口（本館）"],["アジアティーク","S6","無料シャトル船"],
+ ["ターミナル21","E4","MRTスクンビットは3番出口","1番出口"],["エムスフィア／エムクオーティエ","E5",""],
  ["日本人街（プロンポン〜トンロー）","E5","E6も便利"],["ルンピニ公園","BL25",""],
- ["シーロム／パッポン","S2",""],["ナーナー","E3",""],["ジョッドフェアズ（ラマ9）","BL20",""],
+ ["シーロム／パッポン","S2","","1番出口"],["ナーナー","E3",""],["ジョッドフェアズ（ラマ9）","BL20",""],
  ["チャオプラヤー川の船着場","S6","サートーン船着場"],
  ["スワンナプーム空港","A1","ARL直通"],["ドンムアン空港","RN08","レッドライン"],
  ["クルンテープ・アピワット中央駅","RN01","長距離列車"],["IMPACTムアントーンターニー","PK10",""]
@@ -1406,8 +1411,8 @@ const SPOTS=[
 const AREA=[
  ["サラデーン・ソイ1（ローカル飯）","S2","徒歩2分"],
  ["ソイ・コンウェン（食堂〜バーの通り）","S2","徒歩3分"],
- ["パッポン・ナイトマーケット（土産の露店）","S2","徒歩3分"],
- ["タニヤ通り（日本料理店・日本語OKの店が多い）","S2","徒歩3分"],
+ ["パッポン・ナイトマーケット（土産の露店）","S2","徒歩3分","1番出口"],
+ ["タニヤ通り（日本料理店・日本語OKの店が多い）","S2","徒歩3分","1番出口"],
  ["シーロム・ソイ4（バーが並ぶ路地）","S2","徒歩4分"],
  ["シーロムコンプレックス／セントラル・シーロム","S2","駅直結"],
  ["ルンピニ公園（朝の散歩・ジョギング）","BL25","徒歩7分"],
@@ -1415,15 +1420,17 @@ const AREA=[
  ["ヘルスランド サートーン（タイ古式マッサージ）","S5","スラサックから徒歩7分・要予約・要確認"],
  ["スカイバー（ルブア／ハングオーバー2の舞台）","S6","駅から徒歩10分・ドレスコード有"],
  ["サートーン船着場（ディナークルーズ乗り場）","S6","駅から徒歩3分"],
- ["ヤワラート／中華街の屋台（夜が本番）","BL29","MRTで3駅"],
+ ["ヤワラート／中華街の屋台（夜が本番）","BL29","MRTで3駅","1番出口"],
  ["ジョッドフェアズ（ナイトマーケット）","BL20","MRTで6駅・乗換なし"]
 ];
 (function(){
-  const mk=(arr)=>arr.map(([n,id,memo])=>{
+  const mk=(arr)=>arr.map(([n,id,memo,exit])=>{
     const s=ST[id],m=LINE[[...s.lines][0]];
     return `<button class="spot" data-id="${id}">
       <span class="pill" style="--c:var(${m.c})"><span class="dot"></span>${esc(s.code)}</span>
-      <span class="nb"><b>${esc(n)}</b><span>${esc(s.ja)}（${esc(s.en)}）</span></span>
+      <span class="nb"><b>${esc(n)}</b>
+        <span>${esc(s.ja)}（${esc(s.en)}）</span>
+        ${exit?`<span class="exit" style="--c:var(${m.c})">🚪 ${esc(exit)}</span>`:""}</span>
       ${memo?`<span class="walk">${esc(memo)}</span>`:""}</button>`;
   }).join("");
   const click=e=>{ const b=e.target.closest(".spot"); if(!b)return; P.to.set(b.dataset.id); go("find"); };
