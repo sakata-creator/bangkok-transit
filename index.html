@@ -1,5 +1,22 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#0C6A59" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0D1413" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="バンコク乗換">
+<meta name="description" content="バンコクの鉄道（BTS/MRT/ARL/ゴールド/レッド）乗換検索。時刻・運賃・使えるカード・出口番号・タイ語フレーズ。">
 <title>バンコク鉄道 乗換ガイド</title>
 <style>
+html{-webkit-text-size-adjust:100%}
+img{max-width:100%;height:auto}
+[hidden]{display:none!important}
+</style>
+</head>
+<body><style>
 :root{
   --bg:#EDF1F0; --surface:#FFFFFF; --surface2:#F5F8F7;
   --ink:#111D1C; --ink2:#38504D; --muted:#61756F; --hair:#D6DEDC;
@@ -2050,3 +2067,6 @@ function go(id){
 }
 document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()=>go(b.dataset.tab)));
 </script>
+
+</body>
+</html>
