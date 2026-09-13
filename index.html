@@ -439,6 +439,10 @@ footer{margin-top:26px;padding-top:14px;border-top:1px solid var(--hair);font-si
   <h2 class="spoth">サラデーン周辺（滞在先エリア）</h2>
   <div class="spotwrap" id="areaList"></div>
   <div class="warnbox" style="margin-top:10px"><b>注意</b>：パッポンとタニヤは飲食店と風俗店が混在するエリア。夜は客引きやぼったくりの話も普通にあるので、店は自分で見て判断して。</div>
+  <h2 class="spoth">日本語が通じる場所</h2>
+  <div class="spotwrap" id="jpList"></div>
+  <div class="warnbox" style="margin-top:10px"><b>要確認</b>：病院の日本語窓口は受付時間が決まっていることがあります。店は入れ替わりが激しいので、個別の飲食店名ではなくエリアと施設だけ載せています。</div>
+
   <h2 class="spoth">観光・買い物</h2>
   <div class="spotwrap" id="spotList"></div>
   <div class="warnbox" style="margin-top:10px"><b>出口番号について</b>：🚪 が付いている場所だけ出口番号を調べて入れてあります（<b>要確認</b>）。出口の番号や名称は工事などで変わることがあるので、駅構内の案内図と見比べてください。番号が無い場所はまだ未調査です。</div>
@@ -1423,6 +1427,16 @@ const AREA=[
  ["ヤワラート／中華街の屋台（夜が本番）","BL29","MRTで3駅","1番出口"],
  ["ジョッドフェアズ（ナイトマーケット）","BL20","MRTで6駅・乗換なし"]
 ];
+/* 日本語が通じる場所（要確認） */
+const JP=[
+ ["タニヤ通り（日本料理店が集まる通り）","S2","徒歩3分","1番出口"],
+ ["日本人街（プロンポン〜トンロー）","E5","E6エカマイ側も日系が多い"],
+ ["フジスーパー1号店（日本の食材）","E5","スクンビット33/1・徒歩5分"],
+ ["フジスーパー2号店","E5","ソイ39・徒歩は遠いのでタクシーかシーロー"],
+ ["サミティベート病院（日本人窓口）","E5","スクンビット49"],
+ ["バムルンラード病院（日本人窓口）","E3","スクンビット3・徒歩10分／プルンチットからも可"],
+ ["バンコク病院 JMS（日本語の内科）","E6","スクンビット55"]
+];
 (function(){
   const mk=(arr)=>arr.map(([n,id,memo,exit])=>{
     const s=ST[id],m=LINE[[...s.lines][0]];
@@ -1441,6 +1455,8 @@ const AREA=[
     click(e);
   });
   h.innerHTML=mk(SPOTS); h.addEventListener("click",click);
+  const j=document.getElementById("jpList");
+  j.innerHTML=mk(JP); j.addEventListener("click",click);
 })();
 
 /* ===================== タイ語フレーズ =====================
