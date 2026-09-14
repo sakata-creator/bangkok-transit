@@ -221,6 +221,8 @@ section[hidden]{display:none}
 .xfer{margin:2px 0 2px;padding:8px 11px;background:var(--surface2);border:1px dashed var(--hair);
   border-radius:9px;font-size:13px;color:var(--ink2)}
 .xfer b{font-weight:650;color:var(--ink)}
+.xtip{margin-top:6px;padding-top:6px;border-top:1px dashed var(--hair);font-size:12.5px;color:var(--accent);line-height:1.6}
+.xtip b{font-weight:680}
 .xwarn{margin-top:6px;padding-top:6px;border-top:1px dashed var(--hair);font-size:12.5px;color:var(--warn)}
 .xwarn b{color:var(--warn)}
 .paymini{display:flex;gap:8px;align-items:flex-start;padding:2px 0 8px;flex-wrap:wrap}
@@ -634,6 +636,13 @@ const LINES = [
   "RN01|Krung Thep Aphiwat (Bang Sue)|クルンテープ・アピワット中央駅","RW02|Bang Son|バーンソン",
   "RW03|Bang Bamru|バーンバムルー","RW04|Taling Chan|タリンチャン"]}
 ];
+
+/* 乗換のコツ（実地で分かった分だけ入れる。キーは「駅A>駅B」で向きごと）
+   出典が旅行者の投稿レベルのものは「要確認」と書いてある。現地で違ったら直す。 */
+const XTIP={
+ "E4>BL22":"サイアム方面から来た場合は<b>進行方向の前寄り</b>の改札が近い（要確認）",
+ "BL22>E4":"MRT側からは<b>エスカレーターで上がる</b>とBTSの券売機前に出る。夕ラッシュ（17〜19時）は上り専用になる（要確認）"
+};
 
 /* 乗換（駅A, 駅B, 徒歩分） 同一駅の別路線は id が同じなので不要 */
 const XFER = [
@@ -1231,7 +1240,9 @@ function run(){
       for(let k=li+1;k<r.legs.length;k++) if(!r.legs[k].walk){ ns=LINE[r.legs[k].line].sys; break; }
       const cross=ps&&ns&&ps!==ns&&!(BEM(ps)&&BEM(ns));
       const nx=st(li+1);
+      const tip=XTIP[leg.from+">"+leg.to];
       html+=`<div class="xfer">🚶 <b>乗換</b>：${esc(leg.label||"")} ／ 徒歩約 <span class="num">${leg.min}</span> 分＋待ち約 <span class="num">${nx?nx.wait:WAIT}</span> 分
+        ${tip?`<div class="xtip">💡 ${tip}</div>`:""}
         ${cross?`<div class="xwarn">🎫 事業者が変わる（${esc(SYSNAME[ps])} → ${esc(SYSNAME[ns])}）：<b>改札を出て買い直し</b></div>`:""}</div>`;
       return;
     }
