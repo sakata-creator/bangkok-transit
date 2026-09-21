@@ -1779,9 +1779,13 @@ async function gTranslate(text,source,target){
 /* キーが無いとき用の無料翻訳（MyMemory）。キー不要だが1日の文字数制限があり、精度はGoogleより落ちる */
 async function mmTranslate(text,source,target){
   let r;
+  const ac=("AbortController" in window)?new AbortController():null;
+  const timer=setTimeout(()=>{ try{ ac&&ac.abort(); }catch(x){} },15000);
   try{
-    r=await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${source}|${target}`);
-  }catch(err){ const e=new Error("net"); e.code="net"; throw e; }
+    r=await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${source}|${target}`,
+      ac?{signal:ac.signal}:undefined);
+  }catch(err){ const e=new Error("net"); e.code=(err&&err.name==="AbortError")?"slow":"net"; throw e; }
+  finally{ clearTimeout(timer); }
   if(!r.ok){ const e=new Error("http"); e.code="http"; e.status=r.status; throw e; }
   const j=await r.json();
   const t=j&&j.responseData&&j.responseData.translatedText;
@@ -1791,6 +1795,7 @@ async function mmTranslate(text,source,target){
   return t;
 }
 function trErrMsg(e){
+  if(e.code==="slow") return "無料翻訳の反応が無かったので止めました。下のボタンからGoogle翻訳を開いてください。";
   if(e.code==="limit") return "無料翻訳の上限に達したか、うまく訳せませんでした。下のボタンからGoogle翻訳を開いてください。";
   if(e.code==="nokey") return "APIキーが未設定。下の「⚙ 翻訳キーの設定」から貼って。無い場合は下のGoogle翻訳リンクを使って。";
   if(e.code==="net")   return "通信できなかった。オフラインか、ブラウザに止められた可能性。Google翻訳リンクを使って。";
@@ -1840,7 +1845,9 @@ function trErrMsg(e){
     if(!text){ out.innerHTML=`<p class="note" style="margin-top:10px">文を入力してください。</p>`; return; }
     const [s,t]=dir.split("|");
     btn.disabled=true; const label=btn.textContent; btn.textContent="翻訳中…";
-    out.innerHTML=`<p class="note" style="margin-top:10px">翻訳中…</p>`;
+    out.innerHTML=`<p class="note" style="margin-top:10px">翻訳中です。無料の翻訳なので<b>10秒ほどかかります</b>。
+      急ぐときは下のボタンでGoogle翻訳を開いてください。</p>
+      <div class="trbtns"><a class="gmaps" href="${gtUrl(text,s,t)}" target="_blank" rel="noopener">Google翻訳で開く →</a></div>`;
     try{
       // キーがあればGoogle、無ければ無料のMyMemory
       const res = apiKey() ? await gTranslate(text,s,t) : await mmTranslate(text,s,t);
