@@ -494,7 +494,7 @@ footer{margin-top:20px;padding-top:14px;border-top:1px solid var(--hair);font-si
   <div id="phraseList"></div>
   <div class="card panel">
     <div class="eyebrow" style="margin-bottom:6px">その場で翻訳</div>
-    <p class="note" style="margin:0 0 10px">日本語を入れて<b>Google翻訳で開く</b>を押すと、別タブでGoogle翻訳が開く（ネット接続が必要）。オフラインで使いたい時は下のフレーズ集を。</p>
+    <p class="note" style="margin:0 0 10px">日本語を入れて<b>翻訳する</b>を押すと、この画面にタイ語が出ます（ネット接続が必要）。読み上げと全画面表示もできます。オフラインで使う時は下のフレーズ集を。</p>
     <div class="field"><input id="i-tr" type="text" autocomplete="off" placeholder="伝えたいことを入力"></div>
     <div class="segrow" style="margin-top:10px">
       <div class="seg" id="trdir" role="group">
@@ -503,7 +503,7 @@ footer{margin-top:20px;padding-top:14px;border-top:1px solid var(--hair);font-si
         <button type="button" data-d="ja|en" aria-pressed="false">日→英</button>
       </div>
     </div>
-    <button class="geobtn" id="trgo" type="button" style="margin-top:10px">Google翻訳で開く</button>
+    <button class="geobtn" id="trgo" type="button" style="margin-top:10px">翻訳する</button>
     <div id="trOut"></div>
 
     <details class="keybox" id="keybox">
@@ -1776,7 +1776,22 @@ async function gTranslate(text,source,target){
   return String(t.translatedText).replace(/&#(\d+);/g,(m,d)=>String.fromCharCode(+d))
     .replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">");
 }
+/* キーが無いとき用の無料翻訳（MyMemory）。キー不要だが1日の文字数制限があり、精度はGoogleより落ちる */
+async function mmTranslate(text,source,target){
+  let r;
+  try{
+    r=await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${source}|${target}`);
+  }catch(err){ const e=new Error("net"); e.code="net"; throw e; }
+  if(!r.ok){ const e=new Error("http"); e.code="http"; e.status=r.status; throw e; }
+  const j=await r.json();
+  const t=j&&j.responseData&&j.responseData.translatedText;
+  if(!t||/MYMEMORY WARNING|QUERY LENGTH LIMIT|INVALID LANGUAGE/i.test(t)){
+    const e=new Error("limit"); e.code="limit"; throw e;
+  }
+  return t;
+}
 function trErrMsg(e){
+  if(e.code==="limit") return "無料翻訳の上限に達したか、うまく訳せませんでした。下のボタンからGoogle翻訳を開いてください。";
   if(e.code==="nokey") return "APIキーが未設定。下の「⚙ 翻訳キーの設定」から貼って。無い場合は下のGoogle翻訳リンクを使って。";
   if(e.code==="net")   return "通信できなかった。オフラインか、ブラウザに止められた可能性。Google翻訳リンクを使って。";
   if(e.code==="http"){
@@ -1799,7 +1814,7 @@ function trErrMsg(e){
     stat.innerHTML=has
       ? `✅ この端末にキーが保存されています。ページ内で翻訳します。`
       : `未設定です。このままでもGoogle翻訳が別タブで開くので問題ありません。`;
-    btn.textContent = has ? "翻訳する" : "Google翻訳で開く";
+    btn.textContent = "翻訳する";
   };
   document.getElementById("keysave").addEventListener("click",()=>{
     const v=(keyIn.value||"").trim();
@@ -1824,31 +1839,29 @@ function trErrMsg(e){
     const text=(ti.value||"").trim();
     if(!text){ out.innerHTML=`<p class="note" style="margin-top:10px">文を入力してください。</p>`; return; }
     const [s,t]=dir.split("|");
-    // キーが無いときは、そのままGoogle翻訳を別タブで開く（クリック直後に開かないとブロックされる）
-    if(!apiKey()){
-      window.open(gtUrl(text,s,t),"_blank","noopener");
-      out.innerHTML=`<p class="note" style="margin-top:10px">Google翻訳を別タブで開きました。</p>`;
-      return;
-    }
     btn.disabled=true; const label=btn.textContent; btn.textContent="翻訳中…";
     out.innerHTML=`<p class="note" style="margin-top:10px">翻訳中…</p>`;
     try{
-      const res=await gTranslate(text,s,t);
+      // キーがあればGoogle、無ければ無料のMyMemory
+      const res = apiKey() ? await gTranslate(text,s,t) : await mmTranslate(text,s,t);
       const lang = t==="th"?"th":t==="en"?"en":null;
       out.innerHTML=`<div class="trres">
           <div class="src">${esc(text)}</div>
           <div class="big" id="trBig">${esc(res)}</div>
+          ${apiKey()?"":`<div class="note" style="margin-top:6px">無料の自動翻訳です。うまく通じない時はGoogle翻訳で確認してください。</div>`}
         </div>
         <div class="trbtns">
           ${lang?`<button class="gmaps" id="trSpeak" type="button" style="cursor:pointer">🔊 読み上げ</button>`:""}
           <button class="gmaps" id="trShow" type="button" style="cursor:pointer">👆 全画面で見せる</button>
+          <a class="gmaps" href="${gtUrl(text,s,t)}" target="_blank" rel="noopener">Google翻訳で確認 →</a>
         </div>`;
       const sp=document.getElementById("trSpeak");
       if(sp) sp.addEventListener("click",()=>speak(res,lang,0.85));
       document.getElementById("trShow").addEventListener("click",()=>
         showPhrase(text,res,"",t==="en"?res:"",t==="th"?"タイ語（Google翻訳）":""));
     }catch(e){
-      out.innerHTML=`<div class="warnbox" style="margin-top:10px">${esc(trErrMsg(e))}</div>`;
+      out.innerHTML=`<div class="warnbox" style="margin-top:10px">${esc(trErrMsg(e))}</div>
+        <div class="trbtns"><a class="gmaps" href="${gtUrl(text,s,t)}" target="_blank" rel="noopener">Google翻訳で開く →</a></div>`;
     }finally{ btn.disabled=false; btn.textContent=label; }
   };
   btn.addEventListener("click",run);
