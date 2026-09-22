@@ -235,6 +235,24 @@ section[hidden]{display:none}
   border-radius:8px;padding:8px 12px}
 .gmaps:hover{background:color-mix(in srgb,var(--accent) 10%,transparent)}
 
+/* ---------- 路線図 ---------- */
+.mapwrap{margin-top:12px;border:1px solid var(--hair);border-radius:12px;background:var(--surface);
+  box-shadow:var(--shadow);overflow:hidden}
+.mapscroll{overflow:auto;-webkit-overflow-scrolling:touch;max-height:72vh}
+.mapscroll svg{display:block}
+.mapscroll .stn{cursor:pointer}
+.mapscroll .stn:hover circle{stroke-width:4}
+.mapscroll text{font-family:var(--ui);fill:var(--ink);pointer-events:none}
+.mapscroll .lbl{font-size:11px;font-weight:600}
+.mapscroll .lbl.xf{font-weight:700}
+.mapscroll .cd{font-size:8.5px;fill:var(--muted);font-family:var(--code)}
+.maplegend{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.maplegend .lg{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;
+  padding:3px 9px 4px;border-radius:999px;color:var(--c);
+  background:color-mix(in srgb,var(--c) 12%,transparent);
+  border:1px solid color-mix(in srgb,var(--c) 38%,transparent)}
+.maplegend .lg i{width:14px;height:4px;border-radius:2px;background:var(--c)}
+
 /* ---------- lines tab ---------- */
 details.lineblk{border:1px solid var(--hair);border-radius:11px;background:var(--surface);margin-top:8px;overflow:hidden}
 details.lineblk>summary{list-style:none;cursor:pointer;padding:11px 13px;display:flex;align-items:center;gap:9px}
@@ -401,6 +419,7 @@ footer{margin-top:20px;padding-top:14px;border-top:1px solid var(--hair);font-si
   </div>
   <nav role="tablist">
     <button role="tab" aria-selected="true" data-tab="find">乗換検索</button>
+    <button role="tab" aria-selected="false" data-tab="map">路線図</button>
     <button role="tab" aria-selected="false" data-tab="lines">路線・駅一覧</button>
     <button role="tab" aria-selected="false" data-tab="spots">スポット</button>
     <button role="tab" aria-selected="false" data-tab="talk">タイ語で聞く</button>
@@ -454,6 +473,13 @@ footer{margin-top:20px;padding-top:14px;border-top:1px solid var(--hair);font-si
   </div>
 
   <div id="out"></div>
+</section>
+
+<section id="map" hidden>
+  <p class="note" style="margin:14px 0 0">中心部の主要駅だけの図です。駅をタップすると出発駅（2回目は到着駅）に入ります。</p>
+  <div class="mapwrap"><div class="mapscroll" id="mapScroll"></div></div>
+  <div class="maplegend" id="mapLegend"></div>
+  <div class="warnbox" style="margin-top:10px">位置関係はおおまかな模式図です。実際の距離や方角とは違います。全駅は「路線・駅一覧」で見られます。</div>
 </section>
 
 <section id="lines" hidden>
@@ -1399,6 +1425,83 @@ function dist(a,b,c,d){ // haversine (m)
   });
 })();
 
+/* ===================== 路線図（中心部の模式図） =====================
+   [駅id, x, y] 座標は見やすさ優先の模式図。実際の距離・方角とは違う */
+const MAPLINES=[
+ {line:"su", pts:[["N8",150,110],["N5",150,165],["N3",150,210],["N2",150,255],["CEN",150,320],
+   ["E1",205,320],["E2",255,320],["E3",305,320],["E4",355,320],["E5",405,320],["E6",455,320],
+   ["E7",505,320],["E9",555,320],["E14",605,320],["E15",655,320]]},
+ {line:"si", pts:[["W1",70,320],["CEN",150,320],["S1",150,375],["S2",150,420],["S3",150,470],
+   ["S5",150,520],["S6",150,570],["S7",110,615],["S12",25,745]]},
+ {line:"bl", pts:[["BL10",640,110],["BL11",640,150],["BL13",580,150],["BL15",510,150],["BL19",480,195],
+   ["BL20",450,225],["BL21",410,255],["BL22",355,375],["BL23",355,420],["BL25",280,455],
+   ["BL26",215,420],["BL27",215,470],["BL28",215,520],["BL29",215,570],["BL31",175,615],
+   ["BL01",135,660],["BL35",90,705]]},
+ {line:"arl",pts:[["A8",150,255],["A7",255,255],["A6",410,255],["A4",545,255],["A1",700,255]]},
+ {line:"gl", pts:[["S7",110,615],["G2",75,660],["G3",75,705]]},
+ {line:"rd", pts:[["RN01",770,110],["RN08",860,110]]}
+];
+/* 横一列に並ぶ区間。駅名が重なるのでラベルを斜めにする */
+const MAPDIAG=["E1","E2","E3","E4","E5","E6","E7","E9","E14","E15","A7","A6","A4","A1","RN08","BL13","BL11"];
+/* 同じ場所にある駅は片方だけ描く（パヤータイはBTSとARLで駅idが別） */
+const MAPSKIP=["A8"];
+/* ラベルを左側に出す駅（右に出すと隣の駅とぶつかる） */
+const MAPLEFT=["W1","S1","S2","S3","S5","S6","S7","S12","G2","G3"];
+/* 図の中で乗換とみなす駅（二重丸にする） */
+const MAPXF=["CEN","N2","E4","S2","S7","S12","BL10","BL15","BL21","BL22","BL26","BL35","A8","A6","BL11","RN01"];
+/* 図に出す時だけ使う短い表示名 */
+const MAPNAME={N3:"戦勝記念塔",BL19:"タイ文化センター",BL23:"シリキット",W1:"国立競技場",
+  RN01:"アピワット中央",RN08:"ドンムアン",A1:"スワンナプーム",BL13:"チャトゥチャック"};
+
+(function(){
+  const host=document.getElementById("mapScroll");
+  const W=950,H=800;
+  const XY={}; MAPLINES.forEach(L=>L.pts.forEach(p=>{ XY[p[0]]=[p[1],p[2]]; }));
+  let svg=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">`;
+  // 路線の線
+  MAPLINES.forEach(L=>{
+    const d=L.pts.map(p=>`${p[1]},${p[2]}`).join(" ");
+    svg+=`<polyline points="${d}" fill="none" stroke="var(${LINE[L.line].c})"
+      stroke-width="7" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>`;
+  });
+  // 駅
+  const done={};
+  MAPLINES.forEach(L=>L.pts.forEach(p=>{
+    const id=p[0]; if(done[id]||MAPSKIP.includes(id)) return; done[id]=1;
+    const s=ST[id]; if(!s) return;
+    const x=p[1],y=p[2], xf=MAPXF.includes(id);
+    const nm=MAPNAME[id]||s.ja;
+    const diag = MAPDIAG.includes(id);           // 横並びの区間はラベルを斜めにして重なりを防ぐ
+    const right = MAPLEFT.includes(id) ? false : x<W*0.62;
+    let label;
+    if(diag){
+      label=`<g transform="rotate(-45 ${x} ${y-12})">
+        <text class="lbl${xf?" xf":""}" x="${x}" y="${y-12}" text-anchor="start">${esc(nm)}</text>
+        <text class="cd" x="${x}" y="${y-2}" text-anchor="start">${esc(s.code)}</text></g>`;
+    }else{
+      label=`<text class="lbl${xf?" xf":""}" x="${right?x+13:x-13}" y="${y+4}"
+          text-anchor="${right?"start":"end"}">${esc(nm)}</text>
+        <text class="cd" x="${right?x+13:x-13}" y="${y+15}"
+          text-anchor="${right?"start":"end"}">${esc(s.code)}</text>`;
+    }
+    svg+=`<g class="stn" data-id="${id}">
+      <circle cx="${x}" cy="${y}" r="${xf?8:5.5}" fill="var(--surface)"
+        stroke="var(${LINE[L.line].c})" stroke-width="${xf?4:3}"/>
+      ${label}
+    </g>`;
+  }));
+  svg+=`</svg>`;
+  host.innerHTML=svg;
+  host.addEventListener("click",e=>{
+    const g=e.target.closest(".stn"); if(!g) return;
+    (sel.from ? P.to : P.from).set(g.dataset.id);
+    go("find");
+  });
+  document.getElementById("mapLegend").innerHTML=
+    ["su","si","bl","arl","gl","rd"].map(id=>
+      `<span class="lg" style="--c:var(${LINE[id].c})"><i></i>${esc(SHORT[id]||LINE[id].name)}</span>`).join("");
+})();
+
 /* ===================== 路線一覧 ===================== */
 (function(){
   const host=document.getElementById("lineList");
@@ -2113,7 +2216,7 @@ document.getElementById("memoBody").innerHTML=`
 /* ===================== タブ ===================== */
 function go(id){
   document.querySelectorAll("nav button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tab===id)));
-  ["find","lines","spots","talk","memo"].forEach(t=>document.getElementById(t).hidden=(t!==id));
+  ["find","map","lines","spots","talk","memo"].forEach(t=>document.getElementById(t).hidden=(t!==id));
   if(id==="talk"&&window._renderPhrases) window._renderPhrases();
   window.scrollTo({top:0,behavior:"instant"});
 }
